@@ -34,7 +34,7 @@
 | 新增 | BusyBox `usleep` | 未启用 `CONFIG_BUSYBOX_CONFIG_USLEEP` | 启用微秒级休眠命令 `usleep` |
 | 精简 | LuCI 菜单 | 显示「系统 → 插件」和「网络 → 诊断」 | `diy-part2.sh` 编译前从 `luci-mod-system`、`luci-mod-network` 菜单定义中移除这两项并删除对应页面；菜单项不存在时编译中止 |
 | 新增 | CPU/PON 温度显示 | 配置文件不涉及自定义温度脚本 | 添加 `files/sbin/tempinfo`，从 `thermal_zone0` 读取 CPU 温度，从 `ponctl status --json` 读取 PON 前端温度 |
-| 新增 | CPU 使用率附加 PPE 流表 | 状态页仅显示 CPU 使用率 | 添加 `files/sbin/cpuusage`，`diy-part2.sh` 将 LuCI `getCPUUsage` 改为调用该脚本，在 CPU 使用率后显示 `PPE0/PPE1` 已绑定/总条目数（按 `/sys/kernel/debug/ppe/entries` 索引区间划分），如 `CPU: 7%, PPE0: 2/35, PPE1: 5/33`；替换失败时编译中止 |
+| 新增 | 每核 CPU 使用率与 PPE 流表 | 状态页仅显示 CPU 总使用率 | 添加 `files/sbin/cpuusage`，`diy-part2.sh` 将 LuCI `getCPUUsage` 改为调用该脚本，并修改状态页 `10_system.js`：「CPU 使用率」行显示总使用率和每个核心的使用率（两次采样 `/proc/stat`，间隔 0.25 秒），如 `CPU: 3%, CPU0: 8%, CPU1: 2%, CPU2: 1%, CPU3: 1%`；单独的「PPE」行按 `PPE0/PPE1`（`/sys/kernel/debug/ppe/entries` 索引区间划分）分别显示 IPv4、IPv6 的已绑定/总条目数，前为 IPv4、后为 IPv6，如 `PPE0: 6/50 1/18, PPE1: 5/33 6/50`（不含 L2B、DS-LITE、6RD 条目）；替换失败时编译中止 |
 | 调整 | 架构信息精简 | autocore 的 `/sbin/cpuinfo` 在架构后附加 CPU 频率和温度 | 添加 `files/sbin/cpuinfo` 覆盖 autocore 版本，状态页「架构」只显示 `ARMv8 Processor rev 4 (v8l) x 4`，温度见「温度」行 |
 | 调整 | 最大连接数 | 使用内核默认的 `nf_conntrack_max` | 添加 `files/etc/sysctl.d/99-nf-conntrack-max.conf`，将最大连接数设为 `30000`（LuCI「活动连接」上限） |
 | 新增 | 脚本权限修复 | 配置文件不涉及首次启动脚本 | 添加 `files/etc/uci-defaults/98-script-perm`，首次启动时补齐 `/sbin/tempinfo`、`/sbin/cpuusage`、`/sbin/cpuinfo` 的执行权限 |

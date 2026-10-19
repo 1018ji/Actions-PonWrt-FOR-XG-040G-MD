@@ -23,6 +23,19 @@ LUCI_RPC=feeds/luci/modules/luci-base/root/usr/share/rpcd/ucode/luci
 sed -i "s|popen('top -n1[^;]*;|popen('/sbin/cpuusage');|" "$LUCI_RPC"
 grep -q "popen('/sbin/cpuusage')" "$LUCI_RPC" || exit 1
 
+python3 - <<'PY' || exit 1
+path = 'feeds/luci/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/10_system.js'
+old = "_('CPU usage (%)'),    cpuusage.cpuusage\n"
+new = ("_('CPU usage (%)'),    ...((s) => { s = (s || '?').split('\\n'); "
+       "return s[1] ? [ s[0], 'PPE', s[1] ] : [ s[0] ]; })(cpuusage.cpuusage)\n")
+with open(path) as f:
+    data = f.read()
+if old not in data:
+    raise SystemExit(1)
+with open(path, 'w') as f:
+    f.write(data.replace(old, new))
+PY
+
 # Remove LuCI menus: System > Plugins, Network > Diagnostics
 python3 - <<'PY' || exit 1
 import json
