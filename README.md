@@ -32,7 +32,6 @@
 | 精简 | OpenSSL | 启用 ENGINE、CMS、废弃接口、部分旧算法和 `libopenssl-legacy` | 关闭上述选项，启用 `OPENSSL_NO_DEPRECATED`；保留 OpenSSL 主库 |
 | 调整 | 未启用应用的附加选项 | IPTV 设备默认项、PassWall 和 Rclone 的部分附加选项仍启用 | 清理这些默认/附加选项；IPTV、PassWall、Rclone 应用在两份配置中均未启用 |
 | 新增 | BusyBox `usleep` | 未启用 `CONFIG_BUSYBOX_CONFIG_USLEEP` | 启用微秒级休眠命令 `usleep` |
-| 新增 | NPU 软件源 | 配置文件不涉及软件源脚本 | `diy-part1.sh` 拉取 [luanmuc/luci-app-airoha-npu](https://github.com/luanmuc/luci-app-airoha-npu)，通过 `feeds.conf.default` 的本地 `airoha` feed 加入构建；`luci-app-airoha-npu` 及中文翻译暂未选中，不打包进固件，需要时改回 `=y` 即可 |
 | 精简 | LuCI 菜单 | 显示「系统 → 插件」和「网络 → 诊断」 | `diy-part2.sh` 编译前从 `luci-mod-system`、`luci-mod-network` 菜单定义中移除这两项并删除对应页面；菜单项不存在时编译中止 |
 | 新增 | CPU/PON 温度显示 | 配置文件不涉及自定义温度脚本 | 添加 `files/sbin/tempinfo`，从 `thermal_zone0` 读取 CPU 温度，从 `ponctl status --json` 读取 PON 前端温度 |
 | 新增 | CPU 使用率附加 PPE 流表 | 状态页仅显示 CPU 使用率 | 添加 `files/sbin/cpuusage`，`diy-part2.sh` 将 LuCI `getCPUUsage` 改为调用该脚本，在 CPU 使用率后显示 `PPE0/PPE1` 已绑定/总条目数（按 `/sys/kernel/debug/ppe/entries` 索引区间划分），如 `CPU: 7%, PPE0: 2/35, PPE1: 5/33`；替换失败时编译中止 |

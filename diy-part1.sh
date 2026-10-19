@@ -16,8 +16,3 @@
 # Add a feed source
 #echo 'src-git helloworld https://github.com/fw876/helloworld' >>feeds.conf.default
 #echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >>feeds.conf.default
-
-# Add the Airoha NPU LuCI application as a local feed.
-mkdir -p ../airoha-feed
-git clone --depth=1 https://github.com/luanmuc/luci-app-airoha-npu.git ../airoha-feed/luci-app-airoha-npu || exit 1
-rm -rf ../airoha-feed/luci-app-airoha-npu/luci-app-airoha-npu
