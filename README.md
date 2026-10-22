@@ -6,7 +6,7 @@
 
 本配置以精简为主，关闭 USB/存储、无线、VPN、网络扩展及调试工具，保留 PON 管理、基础 IPv6、BBR、LuCI 中文界面和 Bootstrap 主题。Initramfs 改用 ZSTD 压缩，移除 LuCI「插件」「诊断」菜单，并新增 CPU/PON 温度显示、CPU 使用率附加 PPE 流表统计、最大连接数调整、脚本权限修复及 BusyBox `usleep`。
 
-构建工作流位于 [`.github/workflows/ponwrt-builder.yml`](.github/workflows/ponwrt-builder.yml)，在 **Actions → PonWrt Builder → Run workflow** 中手动运行。勾选“开启 SSH 调试”后，可从 **Setup SSH session** 日志复制 SSH 命令连接构建环境，编译会继续运行。SSH 仅允许触发任务的账号使用其 GitHub 公钥连接，请先将本机 SSH 公钥添加到 GitHub 账号的 **Settings → SSH and GPG keys**。源码目录为 `/workdir/openwrt`，调试完成后执行 `exit` 结束会话，以免任务在最后等待。
+构建工作流位于 [`.github/workflows/ponwrt-builder.yml`](.github/workflows/ponwrt-builder.yml)，在 **Actions → PonWrt Builder → Run workflow** 中手动运行，编译成功后会将 `.itb` 固件发布到 **Releases**（以北京时间 `YYYY-MM-DD-HH-MM-SS-毫秒` 命名，仅保留最新 7 个），Actions 运行记录同样仅保留最新 7 条。勾选 `ssh` 后，可从 **Setup SSH session** 日志复制 SSH 命令连接构建环境，编译会继续运行。SSH 仅允许触发任务的账号使用其 GitHub 公钥连接，请先将本机 SSH 公钥添加到 GitHub 账号的 **Settings → SSH and GPG keys**。源码目录为 `/workdir/openwrt`，调试完成后执行 `exit` 结束会话，以免任务在最后等待。
 
 ![PonWrt 状态页面预览，包含 CPU/PON 温度显示](assets/ponwrt-status-preview.png)
 
