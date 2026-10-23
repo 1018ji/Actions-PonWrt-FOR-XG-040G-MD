@@ -9,8 +9,10 @@ on:
         default: false
 
 env:
-  REPO_URL: https://github.com/1018ji/ponwrt
+  REPO_URL: https://github.com/1018ji/merge-immortalwrt-ponwrt
   REPO_BRANCH: master
+  IMMORTALWRT_URL: https://github.com/immortalwrt/immortalwrt
+  PONWRT_URL: https://github.com/pbs05/ponwrt
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
   DIY_P1_SH: diy-part1.sh
@@ -110,8 +112,22 @@ jobs:
         FILES=(openwrt/bin/targets/airoha/an7581/*.itb)
         [ ${#FILES[@]} -gt 0 ] || { echo "no firmware found"; exit 1; }
         TAG="$(TZ="$TZ" date +%Y-%m-%d-%H-%M-%S-%3N)"
-        COMMIT=$(git -C openwrt rev-parse HEAD)
-        gh release create "$TAG" "${FILES[@]}" --title "$TAG" --notes "ponwrt: ${REPO_URL}/commit/${COMMIT}" --target "$GITHUB_SHA"
+        cd openwrt
+        git fetch -q "$IMMORTALWRT_URL" master:refs/remotes/upstream/immortalwrt
+        git fetch -q "$PONWRT_URL" master:refs/remotes/upstream/ponwrt
+        {
+          echo "| 项目 | Commit |"
+          echo "| --- | --- |"
+          echo "| 源码 | $(git rev-parse HEAD) |"
+          echo "| code immortalwrt | $(git merge-base HEAD upstream/immortalwrt) |"
+          echo "| code ponwrt | $(git merge-base HEAD upstream/ponwrt) |"
+          grep '^src-git' feeds.conf.default | while read -r _ NAME _; do
+            echo "| feed ${NAME} | $(git -C "feeds/$NAME" rev-parse HEAD) |"
+          done
+        } > "$RUNNER_TEMP/notes.md"
+        cat "$RUNNER_TEMP/notes.md"
+        cd ..
+        gh release create "$TAG" "${FILES[@]}" --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md" --target "$GITHUB_SHA"
 
     - name: Keep latest 7 releases
       if: steps.publish.outcome == 'success'

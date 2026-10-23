@@ -2,7 +2,7 @@
 
 # Nokia XG-040G-MD 精简版 PonWrt 固件
 
-基于 PonWrt 的 Airoha AN7581 固件编译配置，当前仅编译 **Nokia XG-040G-MD（UBI）**。构建源码使用 [1018ji/ponwrt](https://github.com/1018ji/ponwrt) 的 `master` 分支。
+基于 PonWrt 的 Airoha AN7581 固件编译配置，当前仅编译 **Nokia XG-040G-MD（UBI）**。构建源码使用 [1018ji/merge-immortalwrt-ponwrt](https://github.com/1018ji/merge-immortalwrt-ponwrt) 的 `master` 分支。
 
 本配置以精简为主，关闭 USB/存储、无线、VPN、网络扩展及调试工具，保留 PON 管理、基础 IPv6、BBR、LuCI 中文界面和 Bootstrap 主题。Initramfs 改用 ZSTD 压缩，移除 LuCI「插件」「诊断」菜单，并新增 CPU/PON 温度显示、CPU 使用率附加 PPE 流表统计、最大连接数调整、脚本权限修复及 BusyBox `usleep`。
 
