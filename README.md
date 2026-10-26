@@ -6,7 +6,7 @@
 
 本配置以精简为主，关闭 USB/存储、无线、VPN、网络扩展及调试工具，保留 PON 管理、基础 IPv6、BBR、LuCI 中文界面和 Bootstrap 主题。Initramfs 改用 ZSTD 压缩，移除 LuCI「插件」「诊断」菜单，并新增 CPU/PON 温度显示、CPU 使用率附加 PPE 流表统计、最大连接数调整、脚本权限修复及 BusyBox `usleep`。
 
-构建工作流位于 [`.github/workflows/ponwrt-builder.yml`](.github/workflows/ponwrt-builder.yml)，在 **Actions → PonWrt Builder → Run workflow** 中手动运行，编译成功后会将 `.itb` 固件发布到 **Releases**（以北京时间 `YYYY-MM-DD-HH-MM-SS-毫秒` 命名，仅保留最新 7 个），Actions 运行记录同样仅保留最新 7 条。勾选 `ssh` 后，可从 **Setup SSH session** 日志复制 SSH 命令连接构建环境，编译会继续运行。SSH 仅允许触发任务的账号使用其 GitHub 公钥连接，请先将本机 SSH 公钥添加到 GitHub 账号的 **Settings → SSH and GPG keys**。源码目录为 `/workdir/openwrt`，调试完成后执行 `exit` 结束会话，以免任务在最后等待。
+构建工作流位于 [`.github/workflows/ponwrt-builder.yml`](.github/workflows/ponwrt-builder.yml)，在 **Actions → PonWrt Builder → Run workflow** 中手动运行，编译成功后会将 `.itb` 固件及 `sha256sums`、`config.buildinfo` 发布到 **Releases**（以北京时间 `YYYY-MM-DD-HH-MM-SS-毫秒` 命名，仅保留最新 7 个），Actions 运行记录同样仅保留最新 7 条。编译失败时，编译日志会作为 `build-logs` 上传到该次运行的 **Artifacts**。同一时间只运行一个任务，后触发的会排队等待。
 
 ![PonWrt 状态页面预览，包含 CPU/PON 温度显示](assets/ponwrt-status-preview-20261023.png)
 
@@ -43,3 +43,31 @@
 | 新增 | 脚本权限修复 | 配置文件不涉及首次启动脚本 | 添加 `files/etc/uci-defaults/98-script-perm`，首次启动时补齐 `/sbin/tempinfo`、`/sbin/cpuusage`、`/sbin/cpuinfo` 的执行权限 |
 
 表中的“关闭”指关闭编译选项，包含上游选为 `y` 或 `m` 的包。基础 LuCI 中文界面、PON 管理和 BBR 均为上游已有功能。
+
+## 运行选项
+
+### SSH
+
+| 选项 | 说明 |
+| --- | --- |
+| `否`（默认） | 不开启 SSH |
+| `是` | 下载源码包后开启 SSH 会话，编译不会暂停，继续在后台运行 |
+
+开启后，在 **Setup SSH session** 步骤日志中复制 SSH 命令连接构建环境。仅允许触发任务的账号使用其 GitHub 公钥连接，请先将本机 SSH 公钥添加到 GitHub 账号的 **Settings → SSH and GPG keys**。源码目录为 `/workdir/openwrt`，调试完成后执行 `exit` 结束会话，以免任务在最后等待。
+
+### Cache
+
+工作流使用三类缓存，每类只保留最新一份：
+
+- **下载缓存**（`dl`）：源码包，没有新文件下载时不重复上传
+- **工具链缓存**：`tools` 和 `toolchain` 的编译结果，按工具链相关源码和配置计算 key，源码或配置变化后自动重新编译
+- **编译缓存**（ccache）：固件编译的中间结果，编译失败或超时也会保存，下次运行继续复用
+
+| 选项 | 恢复缓存 | 保存缓存 | 适用场景 |
+| --- | --- | --- | --- |
+| `使用缓存`（默认） | ✅ | ✅ | 日常编译 |
+| `只读缓存` | ✅ | ❌ | 临时测试，不影响已有缓存 |
+| `重新编译` | 仅下载缓存 | ✅ 覆盖旧缓存 | 缓存损坏或编译异常时，从头编译工具链和固件并重建缓存 |
+| `不使用缓存` | ❌ | ❌ | 排查是否为缓存导致的问题，完全干净地编译 |
+
+外部触发（`repository_dispatch`）没有选项，按 `使用缓存` 处理。缓存可在 **Actions → Caches** 中查看或手动删除。编译接近 GitHub 6 小时上限时会主动中止并保存编译缓存，再运行一次即可接着编译。
