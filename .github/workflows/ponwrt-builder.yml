@@ -42,18 +42,24 @@ permissions:
   contents: write
   actions: write
 
+# 同时只跑一个，避免并发保存缓存时互相删除或 key 冲突
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout
-      uses: actions/checkout@main
+      uses: actions/checkout@v4
 
     - name: Initialization environment
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
+        echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
         sudo docker image prune --all --force
         sudo -E apt-get -qq update
@@ -114,6 +120,9 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
+        # 编译日志写到 logs/，失败时上传
+        sed -i '/^CONFIG_BUILD_LOG=/d; /^# CONFIG_BUILD_LOG is not set$/d' .config
+        echo 'CONFIG_BUILD_LOG=y' >> .config
         if [ "$CACHE_MODE" != "不使用缓存" ]; then
           sed -i '/^CONFIG_DEVEL=/d; /^# CONFIG_DEVEL is not set$/d; /^CONFIG_CCACHE=/d; /^# CONFIG_CCACHE is not set$/d' .config
           printf 'CONFIG_DEVEL=y\nCONFIG_CCACHE=y\n' >> .config
@@ -207,8 +216,23 @@ jobs:
       run: |
         cd openwrt
         echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 || make -j1 V=s
+        # job 上限 6 小时，到点被强杀后续步骤都不会执行；预留 20 分钟，超时主动失败以便保存 ccache
+        DEADLINE=$((JOB_START + 6 * 3600 - 20 * 60))
+        run() {
+          LEFT=$((DEADLINE - $(date +%s)))
+          [ "$LEFT" -gt 0 ] || { echo "no time left"; return 124; }
+          timeout -k 60 "$LEFT" "$@"
+        }
+        run make -j$(nproc) || { RC=$?; [ "$RC" -eq 124 ] && { echo "compile timed out"; exit 1; }; run make -j1 V=s; }
         echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: Upload build logs
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-logs
+        path: /workdir/openwrt/logs
+        if-no-files-found: ignore
 
     - name: Check space usage
       if: (!cancelled())
@@ -252,6 +276,9 @@ jobs:
         shopt -s nullglob
         FILES=(openwrt/bin/targets/airoha/an7581/*.itb)
         [ ${#FILES[@]} -gt 0 ] || { echo "no firmware found"; exit 1; }
+        for F in sha256sums config.buildinfo; do
+          [ -e "openwrt/bin/targets/airoha/an7581/$F" ] && FILES+=("openwrt/bin/targets/airoha/an7581/$F")
+        done
         TAG="$(TZ="$TZ" date +%Y-%m-%d-%H-%M-%S-%3N)"
         cd openwrt
         git fetch -q "$IMMORTALWRT_URL" master:refs/remotes/upstream/immortalwrt
