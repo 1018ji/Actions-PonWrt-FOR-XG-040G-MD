@@ -1,0 +1,715 @@
+diff --git a/modules/luci-base/po/zh_Hans/base.po b/modules/luci-base/po/zh_Hans/base.po
+index 5a2bce2..828ad31 100644
+--- a/modules/luci-base/po/zh_Hans/base.po
++++ b/modules/luci-base/po/zh_Hans/base.po
+@@ -16581,3 +16581,87 @@ msgstr "温度"
+ 
+ #~ msgid "Set Static"
+ #~ msgstr "设为静态"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "A valid MAC address is required."
++msgstr "需要有效的 MAC 地址。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "Another hostname is being saved."
++msgstr "正在保存其他主机名。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "Changes staged. Please Save & Apply."
++msgstr "已暂存，请保存并应用。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "Custom hostname editing is unavailable: %s"
++msgstr "自定义主机名编辑暂不可用：%s"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "Edit hostname"
++msgstr "编辑主机名"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "Original hostname restored. Changes staged; please Save & Apply."
++msgstr "已恢复原主机名，修改已暂存，请保存并应用。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "Saving…"
++msgstr "正在保存…"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "The custom hostname record is invalid. Check the configuration before editing."
++msgstr "自定义主机名记录无效，请检查配置后再编辑。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "The hostname has not changed."
++msgstr "名称未更改。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "The hostname is staged, but pending changes could not be displayed. Reconnect and try again."
++msgstr "主机名已暂存，但无法显示配置更改，请恢复连接后重试。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "The hostname must not contain control characters."
++msgstr "主机名不能包含控制字符。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "The hostname must not exceed 32 characters."
++msgstr "主机名最多允许 32 个字符。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "This hostname was changed elsewhere. Reopen the editor before trying again."
++msgstr "此主机名已在其他位置更改，请重新打开编辑后再试。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "Unable to confirm the staged hostname. Check pending changes before retrying."
++msgstr "无法确认主机名暂存结果，请检查待应用修改后再试。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "Unable to read custom hostnames."
++msgstr "无法读取自定义主机名。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "Unable to read pending configuration changes."
++msgstr "无法读取待应用的配置更改。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "Unable to stage the hostname: %s"
++msgstr "暂存主机名失败：%s"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "Unsupported custom hostname configuration. Update LuCI or check the configuration."
++msgstr "不支持当前自定义主机名配置，请更新 LuCI 或检查配置。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "Use only Chinese characters, English letters, digits, - and _, up to 32 characters. Leave empty to restore the original hostname."
++msgstr "仅支持汉字、英文字母、数字、- 和 _，最多 32 个字符；留空将恢复原主机名。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "Use only Chinese characters, English letters, digits, - and _."
++msgstr "仅允许汉字、英文字母、数字、- 和 _。"
++
++#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
++msgid "You do not have permission to edit hostnames."
++msgstr "您没有编辑主机名的权限。"
+diff --git a/modules/luci-mod-status/Makefile b/modules/luci-mod-status/Makefile
+index 6b86e84..21d8aa5 100644
+--- a/modules/luci-mod-status/Makefile
++++ b/modules/luci-mod-status/Makefile
+@@ -13,6 +13,10 @@ PKG_RELEASE:=4
+ PKG_BUILD_DEPENDS:=iwinfo
+ PKG_LICENSE:=Apache-2.0
+ 
++define Package/luci-mod-status/conffiles
++/etc/config/device_aliases
++endef
++
+ include ../../luci.mk
+ 
+ # call BuildPackage - OpenWrt buildroot signature
+diff --git a/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/40_dhcp.js b/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/40_dhcp.js
+index 99856f2..e067859 100644
+--- a/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/40_dhcp.js
++++ b/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/40_dhcp.js
+@@ -4,6 +4,7 @@
+ 'require uci';
+ 'require network';
+ 'require validation';
++'require tools.device-aliases as deviceAliases';
+ 
+ const callLuciDHCPLeases = rpc.declare({
+ 	object: 'luci-rpc',
+@@ -28,7 +29,8 @@ return baseclass.extend({
+ 			callLuciDHCPLeases(),
+ 			network.getHostHints(),
+ 			L.hasSystemFeature('ufpd') ? callUfpList() : null,
+-			L.resolveDefault(uci.load('dhcp'))
++			L.resolveDefault(uci.load('dhcp')),
++			deviceAliases.loadAliases()
+ 		]);
+ 	},
+ 
+@@ -139,11 +141,11 @@ return baseclass.extend({
+ 			else if (lease.hostname)
+ 				host = lease.hostname;
+ 
+-			if (macaddr)
++			if (macaddr && typeof(lease.macaddr) == 'string')
+ 				vendor = macaddr[lease.macaddr.toLowerCase()]?.vendor ?? null;
+ 
+ 			const columns = [
+-				'%h'.format(host || '-'),
++				deviceAliases.renderHostnameCell(lease, host || '-', !isReadonlyView),
+ 				lease.ipaddr,
+ 				'%h'.format(vendor ? lease.macaddr + ` (${vendor})` : lease.macaddr),
+ 				lease.duid || '-',
+diff --git a/modules/luci-mod-status/root/usr/share/rpcd/acl.d/luci-mod-status-index.json b/modules/luci-mod-status/root/usr/share/rpcd/acl.d/luci-mod-status-index.json
+index 956799e..1fa4ebd 100644
+--- a/modules/luci-mod-status/root/usr/share/rpcd/acl.d/luci-mod-status-index.json
++++ b/modules/luci-mod-status/root/usr/share/rpcd/acl.d/luci-mod-status-index.json
+@@ -2,6 +2,7 @@
+ 	"luci-mod-status-index": {
+ 		"description": "Grant access to main status display",
+ 		"read": {
++			"uci": [ "device_aliases" ],
+ 			"file": {
+ 				"/etc/board.json": [ "read" ],
+ 				"/proc/sys/net/netfilter/nf_conntrack_count": [ "read" ],
+@@ -15,7 +16,7 @@
+ 			}
+ 		},
+ 		"write": {
+-			"uci": [ "dhcp" ]
++			"uci": [ "dhcp", "device_aliases" ]
+ 		}
+ 	},
+ 
+diff --git a/modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.css b/modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.css
+new file mode 100644
+index 0000000..b2ace52
+--- /dev/null
++++ b/modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.css
+@@ -0,0 +1,134 @@
++.device-alias-hostname {
++	display: inline-flex;
++	align-items: center;
++	gap: .4em;
++	max-width: 100%;
++}
++
++.device-alias-name {
++	overflow-wrap: anywhere;
++}
++
++#status_leases .device-alias-edit {
++	position: relative;
++	display: inline-flex;
++	align-items: center;
++	justify-content: center;
++	flex-shrink: 0;
++	width: 20px;
++	height: 20px;
++	min-width: 20px;
++	min-height: 20px;
++	padding: 0;
++	border-radius: 3px;
++	border-color: var(--border-color-medium);
++	background: transparent;
++	color: var(--text-color-medium);
++	box-shadow: none;
++}
++
++#status_leases .device-alias-edit[hidden] {
++	display: none;
++}
++
++#status_leases .device-alias-edit:hover,
++#status_leases .device-alias-edit:focus-visible {
++	background: var(--background-color-medium);
++	color: var(--primary-color-high);
++}
++
++#status_leases .device-alias-edit:focus-visible {
++	outline: 2px solid var(--primary-color-high);
++	outline-offset: 2px;
++}
++
++.modal.device-alias-modal {
++	box-sizing: border-box;
++	width: calc(100% - 32px);
++	max-width: 480px;
++	min-width: 0;
++	max-height: calc(100dvh - 32px);
++	overflow-y: auto;
++}
++
++.device-alias-fields {
++	display: grid;
++	grid-template-columns: 80px minmax(0, 1fr);
++	column-gap: 16px;
++	row-gap: 14px;
++	align-items: baseline;
++}
++
++.device-alias-fields > .cbi-value {
++	display: contents;
++}
++
++.device-alias-fields .cbi-value-title,
++.device-alias-fields > label {
++	grid-column: 1;
++}
++
++.device-alias-fields .cbi-value-field {
++	grid-column: 2;
++	min-width: 0;
++	margin: 0;
++	overflow-wrap: anywhere;
++}
++
++.device-alias-fields > input {
++	grid-column: 2;
++	min-width: 0;
++}
++
++.device-alias-fields > .device-alias-help {
++	grid-column: 2;
++	margin: -6px 0 0;
++	color: var(--text-color-medium);
++	line-height: 18px;
++}
++
++.device-alias-fields > [role="alert"] {
++	grid-column: 2;
++	margin: 0;
++}
++
++.device-alias-fields > .button-row {
++	grid-column: 1 / -1;
++	display: flex;
++	justify-content: flex-end;
++	gap: .5em;
++}
++
++@media (pointer: coarse) {
++	#status_leases .device-alias-edit::after {
++		content: '';
++		position: absolute;
++		inset: -6px;
++	}
++}
++
++@media (max-width: 600px) {
++	.modal.device-alias-modal {
++		margin: 16px auto;
++	}
++
++	.device-alias-fields {
++		grid-template-columns: minmax(0, 1fr);
++		row-gap: 8px;
++	}
++
++	.device-alias-fields .cbi-value-field,
++	.device-alias-fields > input,
++	.device-alias-fields > .device-alias-help,
++	.device-alias-fields > [role="alert"] {
++		grid-column: 1;
++	}
++
++	.device-alias-fields .cbi-value-field {
++		margin-bottom: 8px;
++	}
++
++	.device-alias-fields > .device-alias-help {
++		margin: 0;
++	}
++}
+diff --git a/modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js b/modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
+new file mode 100644
+index 0000000..b0472da
+--- /dev/null
++++ b/modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
+@@ -0,0 +1,390 @@
++'use strict';
++'require baseclass';
++'require rpc';
++'require ui';
++
++document.head.appendChild(E('link', {
++	'rel': 'stylesheet', 'href': L.resource('tools/device-aliases.css')
++}));
++
++const config = 'device_aliases';
++const callGet = rpc.declare({ object: 'uci', method: 'get', params: [ 'config' ], reject: true });
++const callAdd = rpc.declare({ object: 'uci', method: 'add', params: [ 'config', 'type', 'name', 'values' ], reject: true });
++const callSet = rpc.declare({ object: 'uci', method: 'set', params: [ 'config', 'section', 'values' ], reject: true });
++const callDelete = rpc.declare({ object: 'uci', method: 'delete', params: [ 'config', 'section' ], reject: true });
++const callChanges = rpc.declare({ object: 'uci', method: 'changes', params: [ 'config' ], reject: true });
++const callAccess = rpc.declare({ object: 'session', method: 'access', params: [ 'scope', 'object', 'function' ], reject: true });
++
++let records = {};
++let names = Object.create(null);
++let available = false;
++let writable = false;
++let busy = false;
++let openingChanges = false;
++let generation = 0;
++let loadSequence = 0;
++let permission = null;
++let warned = false;
++let editor = null;
++let pendingWrite = null;
++let refreshIndicator = false;
++
++function normalizeMac(value) {
++	if (typeof(value) != 'string' || !/^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i.test(value))
++		return null;
++
++	const mac = value.toLowerCase();
++	return mac == '00:00:00:00:00:00' || mac == 'ff:ff:ff:ff:ff:ff' ? null : mac;
++}
++
++function sectionName(mac) {
++	return 'mac_' + mac.replace(/:/g, '');
++}
++
++function validateName(value) {
++	if (typeof(value) != 'string' || /[\x00-\x1f\x7f-\x9f]/.test(value))
++		throw new Error(_('The hostname must not contain control characters.'));
++
++	const name = value.replace(/^ +| +$/g, '');
++	if (!/^[\p{Script=Han}A-Za-z0-9_-]*$/u.test(name))
++		throw new Error(_('Use only Chinese characters, English letters, digits, - and _.'));
++	if (Array.from(name).length > 32 || new TextEncoder().encode(name).length > 128)
++		throw new Error(_('The hostname must not exceed 32 characters.'));
++
++	return name;
++}
++
++function recordName(values, mac) {
++	const record = values[sectionName(mac)];
++	if (!record || record['.type'] != 'device' || normalizeMac(record.mac) != mac)
++		return null;
++	try {
++		const name = validateName(record.name);
++		return name && name === record.name ? name : null;
++	}
++	catch (e) {
++		return null;
++	}
++}
++
++function snapshot(values, mac) {
++	const record = values[sectionName(mac)];
++	return record ? JSON.stringify([ record['.type'], record.mac, record.name ]) : null;
++}
++
++async function readConfiguration() {
++	const reply = await callGet(config);
++	const values = reply?.values;
++	if (!values || typeof(values) != 'object' || Array.isArray(values))
++		throw new Error(_('Unable to read custom hostnames.'));
++	if (values.global?.['.type'] != 'settings' || values.global.schema_version !== '1')
++		throw new Error(_('Unsupported custom hostname configuration. Update LuCI or check the configuration.'));
++	return values;
++}
++
++function notify(message, type) {
++	ui.addNotification(null, E('p', {}, [ document.createTextNode(message) ]), type || 'info');
++}
++
++function resolveName(mac, original) {
++	return names[normalizeMac(mac)] || original || '-';
++}
++
++function refreshCells() {
++	for (const cell of document.querySelectorAll('#status_leases [data-device-alias-mac]')) {
++		cell.querySelector('.device-alias-name').textContent = resolveName(
++			cell.getAttribute('data-device-alias-mac'), cell.getAttribute('data-device-alias-original'));
++		const button = cell.querySelector('button');
++		if (button) {
++			button.disabled = busy || openingChanges || !available || !writable || !L.hasViewPermission();
++			button.hidden = !available || !writable || !L.hasViewPermission();
++		}
++	}
++}
++
++function useConfiguration(values) {
++	const next = Object.create(null);
++	for (const id of Object.keys(values)) {
++		const mac = normalizeMac(values[id]?.mac);
++		if (mac && sectionName(mac) == id) {
++			const name = recordName(values, mac);
++			if (name)
++				next[mac] = name;
++		}
++	}
++	records = values;
++	names = next;
++	available = true;
++	warned = false;
++	refreshCells();
++}
++
++async function loadAliases() {
++	if (busy)
++		return;
++	const sequence = ++loadSequence;
++	const version = generation;
++	try {
++		permission ??= callAccess('uci', config, 'write').then(reply => reply?.access === true);
++		const [ values, access ] = await Promise.all([ readConfiguration(), permission ]);
++		if (sequence != loadSequence || version != generation || busy)
++			return;
++		writable = access;
++		useConfiguration(values);
++		if (refreshIndicator)
++			await updateChangeIndicator().catch(() => {});
++	}
++	catch (e) {
++		if (sequence != loadSequence || version != generation || busy)
++			return;
++		permission = null;
++		available = writable = false;
++		records = {};
++		names = Object.create(null);
++		refreshCells();
++		if (!warned) {
++			warned = true;
++			notify(_('Custom hostname editing is unavailable: %s').format(e.message), 'warning');
++		}
++	}
++}
++
++async function saveName(mac, value, baseline) {
++	mac = normalizeMac(mac);
++	const name = validateName(value);
++	if (!mac)
++		throw new Error(_('A valid MAC address is required.'));
++	if (busy || openingChanges)
++		throw new Error(_('Another hostname is being saved.'));
++	if (!L.hasViewPermission())
++		throw new Error(_('You do not have permission to edit hostnames.'));
++
++	busy = true;
++	generation++;
++	refreshCells();
++	try {
++		const access = await callAccess('uci', config, 'write');
++		if (access?.access !== true)
++			throw new Error(_('You do not have permission to edit hostnames.'));
++		const values = await readConfiguration();
++		const id = sectionName(mac);
++		const current = values[id];
++		const matches = name ? recordName(values, mac) === name : !current;
++		const recovered = matches && pendingWrite?.mac === mac && pendingWrite.name === name;
++		writable = true;
++		useConfiguration(values);
++		if (matches) {
++			if (pendingWrite?.mac === mac)
++				pendingWrite = null;
++			return { changed: !!recovered, name };
++		}
++		if (snapshot(values, mac) !== baseline)
++			throw new Error(_('This hostname was changed elsewhere. Reopen the editor before trying again.'));
++		if (current && (current['.type'] != 'device' || normalizeMac(current.mac) != mac))
++			throw new Error(_('The custom hostname record is invalid. Check the configuration before editing.'));
++
++		pendingWrite = { mac, name };
++		refreshIndicator = true;
++		if (!name)
++			await callDelete(config, id);
++		else if (current)
++			await callSet(config, id, { mac, name });
++		else
++			await callAdd(config, 'device', id, { mac, name });
++
++		const saved = await readConfiguration();
++		if (name ? recordName(saved, mac) !== name : saved[id] != null)
++			throw new Error(_('Unable to confirm the staged hostname. Check pending changes before retrying.'));
++		useConfiguration(saved);
++		pendingWrite = null;
++		return { changed: true, name };
++	}
++	finally {
++		busy = false;
++		generation++;
++		refreshCells();
++	}
++}
++
++function restoreFocus(mac) {
++	for (const cell of document.querySelectorAll('#status_leases [data-device-alias-mac]')) {
++		if (cell.getAttribute('data-device-alias-mac') == mac) {
++			const button = cell.querySelector('button');
++			if (button && !button.disabled && !button.hidden) {
++				button.focus();
++				return;
++			}
++		}
++	}
++	const table = document.getElementById('status_leases');
++	if (table) {
++		table.setAttribute('tabindex', '-1');
++		table.focus();
++	}
++}
++
++function closeEditor(focus) {
++	if (!editor || editor.saving)
++		return;
++	const mac = editor.mac;
++	editor = null;
++	ui.hideModal();
++	if (focus !== false)
++		restoreFocus(mac);
++}
++
++async function updateChangeIndicator() {
++	const version = generation;
++	await ui.changes.init();
++	const reply = await callChanges(config);
++	if (!Array.isArray(reply?.changes) || (reply.changes.length && !Array.isArray(ui.changes.changes?.[config])))
++		throw new Error(_('Unable to read pending configuration changes.'));
++	if (version == generation)
++		refreshIndicator = false;
++}
++
++async function showChanges() {
++	await updateChangeIndicator();
++	ui.changes.displayChanges();
++}
++
++function openEditor(lease, original) {
++	const mac = normalizeMac(lease.macaddr);
++	if (!mac || !available || !writable || !L.hasViewPermission() || busy || openingChanges || editor)
++		return;
++
++	const input = E('input', {
++		'id': 'device-alias-name', 'class': 'cbi-input-text', 'type': 'text',
++		'value': names[mac] || '', 'placeholder': original || '-', 'autocomplete': 'off',
++		'style': 'width:100%;box-sizing:border-box'
++	});
++	const error = E('p', { 'class': 'alert-message warning', 'role': 'alert' });
++	error.hidden = true;
++	const cancel = E('button', { 'class': 'btn cbi-button', 'type': 'button', 'click': () => closeEditor() }, [ _('Cancel') ]);
++	const save = E('button', { 'class': 'btn cbi-button cbi-button-positive important', 'type': 'button' }, [ _('Save') ]);
++	const state = editor = { mac, baseline: snapshot(records, mac), saving: false, composing: false };
++
++	const submit = async () => {
++		if (state.saving || editor !== state || state.composing)
++			return;
++		state.saving = true;
++		input.disabled = cancel.disabled = save.disabled = true;
++		save.textContent = _('Saving…');
++		error.hidden = true;
++		let result;
++		try {
++			result = await saveName(mac, input.value, state.baseline);
++		}
++		catch (e) {
++			error.textContent = _('Unable to stage the hostname: %s').format(e.message);
++			error.hidden = false;
++		}
++		finally {
++			state.saving = false;
++			input.disabled = cancel.disabled = save.disabled = false;
++			save.textContent = _('Save');
++		}
++		if (!result) {
++			input.focus();
++			return;
++		}
++		openingChanges = result.changed;
++		closeEditor(!result.changed);
++		refreshCells();
++		if (!result.changed) {
++			notify(_('The hostname has not changed.'));
++			return;
++		}
++		notify(result.name ? _('Changes staged. Please Save & Apply.') : _('Original hostname restored. Changes staged; please Save & Apply.'));
++		try {
++			await showChanges();
++		}
++		catch (e) {
++			notify(_('The hostname is staged, but pending changes could not be displayed. Reconnect and try again.'), 'warning');
++		}
++		finally {
++			openingChanges = false;
++			refreshCells();
++		}
++	};
++	save.addEventListener('click', submit);
++	const row = (label, value) => E('div', { 'class': 'cbi-value' }, [
++		E('span', { 'class': 'cbi-value-title' }, [ document.createTextNode(label) ]),
++		E('div', { 'class': 'cbi-value-field' }, [ document.createTextNode(value || '-') ])
++	]);
++	const content = E('div', { 'class': 'device-alias-fields' }, [
++		row(_('IPv4 address'), lease.ipaddr), row(_('MAC address'), mac.toUpperCase()),
++		E('label', { 'for': 'device-alias-name' }, [ _('Hostname') ]), input,
++		E('p', { 'class': 'device-alias-help' }, [ _('Use only Chinese characters, English letters, digits, - and _, up to 32 characters. Leave empty to restore the original hostname.') ]),
++		error, E('div', { 'class': 'button-row' }, [ cancel, ' ', save ])
++	]);
++	ui.showModal(_('Edit hostname'), [ content ], 'device-alias-modal');
++	content.addEventListener('compositionstart', () => { state.composing = true; });
++	content.addEventListener('compositionend', () => { state.composing = false; });
++	content.addEventListener('keydown', ev => {
++		if (ev.key == 'Escape') {
++			ev.stopPropagation();
++			if (!state.composing && !ev.isComposing && ev.keyCode != 229) {
++				ev.preventDefault();
++				closeEditor();
++			}
++		}
++		else if (ev.key == 'Enter' && ev.target === input && !state.composing && !ev.isComposing && ev.keyCode != 229) {
++			ev.preventDefault();
++			ev.stopPropagation();
++			submit();
++		}
++	});
++	input.focus();
++	if (input.value)
++		input.select();
++}
++
++function renderHostnameCell(lease, original, pageWritable) {
++	const mac = normalizeMac(lease.macaddr);
++	const cell = E('span', {
++		'data-device-alias-mac': mac || '', 'data-device-alias-original': original || '-',
++		'class': 'device-alias-hostname'
++	}, [ E('span', { 'class': 'device-alias-name' }, [
++		document.createTextNode(resolveName(mac, original))
++	]) ]);
++	if (mac && pageWritable && available && writable && L.hasViewPermission()) {
++		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
++		for (const [ key, value ] of Object.entries({ viewBox: '0 0 24 24', width: '13', height: '13', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'aria-hidden': 'true', focusable: 'false' }))
++			svg.setAttribute(key, value);
++		const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
++		path.setAttribute('d', 'M16 3l5 5L8 21H3v-5L16 3zM14 5l5 5');
++		svg.appendChild(path);
++		const button = E('button', {
++			'class': 'btn cbi-button device-alias-edit', 'type': 'button', 'title': _('Edit hostname'), 'aria-label': _('Edit hostname'),
++			'click': () => openEditor(lease, original)
++		}, [ svg ]);
++		button.disabled = busy || openingChanges;
++		cell.appendChild(button);
++	}
++	return cell;
++}
++
++document.addEventListener('uci-reverted', () => {
++	generation++;
++	loadSequence++;
++	available = false;
++	records = {};
++	names = Object.create(null);
++	pendingWrite = null;
++	refreshIndicator = false;
++	refreshCells();
++	loadAliases();
++});
++
++return baseclass.extend({
++	normalizeMac,
++	validateName,
++	loadAliases,
++	resolveName,
++	renderHostnameCell,
++	openEditor,
++	closeEditor,
++	saveName,
++	clearName(mac, baseline) { return saveName(mac, '', baseline); }
++});
+diff --git a/modules/luci-mod-status/root/etc/config/device_aliases b/modules/luci-mod-status/root/etc/config/device_aliases
+new file mode 100644
+index 0000000..cb985f1
+--- /dev/null
++++ b/modules/luci-mod-status/root/etc/config/device_aliases
+@@ -0,0 +1,2 @@
++config settings 'global'
++	option schema_version '1'
+diff --git a/modules/luci-mod-status/root/lib/upgrade/keep.d/luci-device-aliases b/modules/luci-mod-status/root/lib/upgrade/keep.d/luci-device-aliases
+new file mode 100644
+index 0000000..82fc281
+--- /dev/null
++++ b/modules/luci-mod-status/root/lib/upgrade/keep.d/luci-device-aliases
+@@ -0,0 +1 @@
++/etc/config/device_aliases
