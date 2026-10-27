@@ -41,8 +41,23 @@
 | 调整 | 架构信息精简 | autocore 的 `/sbin/cpuinfo` 在架构后附加 CPU 频率和温度 | 添加 `files/sbin/cpuinfo` 覆盖 autocore 版本，状态页「架构」只显示 `ARMv8 Processor rev 4 (v8l) x 4`，温度见「温度」行 |
 | 调整 | 最大连接数 | 使用内核默认的 `nf_conntrack_max` | 添加 `files/etc/sysctl.d/99-nf-conntrack-max.conf`，将最大连接数设为 `30000`（LuCI「活动连接」上限） |
 | 新增 | 脚本权限修复 | 配置文件不涉及首次启动脚本 | 添加 `files/etc/uci-defaults/98-script-perm`，首次启动时补齐 `/sbin/tempinfo`、`/sbin/cpuusage`、`/sbin/cpuinfo` 的执行权限 |
+| 新增 | DHCPv4 主机名编辑 | 租约主机名仅显示设备上报内容 | 主机名后显示内联 SVG 铅笔按钮，鼠标和触屏均可点击弹窗编辑；按 MAC 关联，允许汉字、英文字母、数字、`-`、`_`，最多 32 个字符。保存后立即显示，复用原生暂存、保存并应用及恢复；不影响 DHCPv6、DNS 或动态分配 |
 
 表中的“关闭”指关闭编译选项，包含上游选为 `y` 或 `m` 的包。基础 LuCI 中文界面、PON 管理和 BBR 均为上游已有功能。
+
+## DHCPv4 主机名补丁
+
+LuCI 跟随上游默认分支更新，不锁定提交 SHA。工作流在更新 feeds 后、安装 feeds 前运行 `scripts/apply-feed-patches.sh`，将名称编辑、配置文件、ACL、升级保留清单和中文翻译一起接入固件；保留现有 `diy-part2.sh` 的 CPU/PPE 显示和菜单精简。
+
+保存名称后立即显示新名字，并提示“已暂存，请保存并应用”。原生更改窗口的“关闭”保留暂存，“恢复”撤销当前会话待应用修改，“保存并应用”完成持久保存；全局应用可能同时处理其他页面的待应用修改。
+
+本地准备好 OpenWrt 源码并更新 LuCI feed 后，可从本仓库运行：
+
+```sh
+./scripts/apply-feed-patches.sh /path/to/openwrt/feeds/luci
+```
+
+脚本不限制 LuCI 提交版本，按实际文件内容执行严格检查：可完整应用时应用，已完整应用时跳过；补丁冲突或仅应用了一部分时停止，不重置或丢弃本地修改。上游更新导致补丁冲突时，需要重新适配补丁后再编译。已有编译产物时，先清理并重新编译 `luci-base`（含中文翻译）和 `luci-mod-status`。
 
 ## 运行选项
 
