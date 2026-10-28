@@ -106,7 +106,7 @@ index 6b86e84..21d8aa5 100644
  
  # call BuildPackage - OpenWrt buildroot signature
 diff --git a/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/40_dhcp.js b/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/40_dhcp.js
-index 99856f2..e067859 100644
+index 99856f2..172f33d 100644
 --- a/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/40_dhcp.js
 +++ b/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/40_dhcp.js
 @@ -4,6 +4,7 @@
@@ -159,6 +159,33 @@ index 99856f2..e067859 100644
  				lease.ipaddr,
  				'%h'.format(vendor ? lease.macaddr + ` (${vendor})` : lease.macaddr),
  				lease.duid || '-',
+@@ -169,6 +173,7 @@ return baseclass.extend({
+ 		const table6 = E('table', { 'id': 'status_leases6', 'class': 'table leases6' }, [
+ 			E('tr', { 'class': 'tr table-titles' }, [
+ 				L.hasSystemFeature('odhcpd', 'dhcpv6') ? E('th', { 'class': 'th' }, _('Interface')) : E([]),
++				E('th', { 'class': 'th' }),
+ 				E('th', { 'class': 'th' }, _('Hostname')),
+ 				E('th', { 'class': 'th' }, _('IPv6 addresses')),
+ 				E('th', { 'class': 'th' }, _('DUID')),
+@@ -178,7 +183,7 @@ return baseclass.extend({
+ 			])
+ 		]);
+ 
+-		cbi_update_table(table6, leases6.map(L.bind(function(lease) {
++		cbi_update_table(table6, leases6.map(L.bind(function(lease, index) {
+ 			let exp;
+ 
+ 			if (lease.expires === false)
+@@ -211,7 +216,8 @@ return baseclass.extend({
+ 				disabled = true;
+ 
+ 			const columns = [
+-				'%h'.format(host || '-'),
++				String(index + 1),
++				deviceAliases.renderHostnameCell(lease, host || '-', false),
+ 				lease.ip6addrs ? lease.ip6addrs.join('<br />') : lease.ip6addr,
+ 				duid || '-',
+ 				iaid || '-',
 diff --git a/modules/luci-mod-status/root/usr/share/rpcd/acl.d/luci-mod-status-index.json b/modules/luci-mod-status/root/usr/share/rpcd/acl.d/luci-mod-status-index.json
 index 956799e..1fa4ebd 100644
 --- a/modules/luci-mod-status/root/usr/share/rpcd/acl.d/luci-mod-status-index.json
@@ -322,7 +349,7 @@ index 0000000..b2ace52
 +}
 diff --git a/modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js b/modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
 new file mode 100644
-index 0000000..b0472da
+index 0000000..806f6cd
 --- /dev/null
 +++ b/modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
 @@ -0,0 +1,390 @@
@@ -419,7 +446,7 @@ index 0000000..b0472da
 +}
 +
 +function refreshCells() {
-+	for (const cell of document.querySelectorAll('#status_leases [data-device-alias-mac]')) {
++	for (const cell of document.querySelectorAll('#status_leases [data-device-alias-mac], #status_leases6 [data-device-alias-mac]')) {
 +		cell.querySelector('.device-alias-name').textContent = resolveName(
 +			cell.getAttribute('data-device-alias-mac'), cell.getAttribute('data-device-alias-original'));
 +		const button = cell.querySelector('button');
