@@ -110,7 +110,7 @@ jobs:
     - name: Update feeds
       run: cd openwrt && ./scripts/feeds update -a
 
-    - name: Apply DHCPv4 hostname editing patches
+    - name: Apply LuCI patches
       run: ./scripts/apply-feed-patches.sh openwrt/feeds/luci
 
     - name: Install feeds

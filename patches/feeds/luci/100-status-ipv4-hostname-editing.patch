@@ -106,18 +106,32 @@ index 6b86e84..21d8aa5 100644
  
  # call BuildPackage - OpenWrt buildroot signature
 diff --git a/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/40_dhcp.js b/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/40_dhcp.js
-index 99856f2..172f33d 100644
+index 99856f2..68d03db 100644
 --- a/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/40_dhcp.js
 +++ b/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/40_dhcp.js
-@@ -4,6 +4,7 @@
+@@ -4,6 +4,13 @@
  'require uci';
  'require network';
  'require validation';
 +'require tools.device-aliases as deviceAliases';
++
++// Extract the Ethernet MAC embedded in a DUID-LLT (type 1) or DUID-LL (type 3)
++function duidToMAC(duid) {
++	const m = /^(?:00010001[0-9a-f]{8}|00030001)([0-9a-f]{12})$/.exec(duid ?? '');
++	return m ? deviceAliases.normalizeMac(m[1].replace(/(..)(?!$)/g, '$1:')) : null;
++}
  
  const callLuciDHCPLeases = rpc.declare({
  	object: 'luci-rpc',
-@@ -28,7 +29,8 @@ return baseclass.extend({
+@@ -22,13 +29,16 @@ return baseclass.extend({
+ 	isMACStatic: {},
+ 	isDUIDStatic: {},
+ 	isDUIDIAIDStatic: {},
++	staticDUIDMAC: {},
++	staticDUIDIAIDMAC: {},
+ 
+ 	load() {
+ 		return Promise.all([
  			callLuciDHCPLeases(),
  			network.getHostHints(),
  			L.hasSystemFeature('ufpd') ? callUfpList() : null,
@@ -127,24 +141,40 @@ index 99856f2..172f33d 100644
  		]);
  	},
  
-@@ -110,6 +112,7 @@ return baseclass.extend({
- 		const table = E('table', { 'id': 'status_leases', 'class': 'table leases' }, [
- 			E('tr', { 'class': 'tr table-titles' }, [
- 				L.hasSystemFeature('odhcpd', 'dhcpv4') ? E('th', { 'class': 'th' }, _('Interface')) : E([]),
-+				E('th', { 'class': 'th' }),
- 				E('th', { 'class': 'th' }, _('Hostname')),
- 				E('th', { 'class': 'th' }, _('IPv4 address')),
- 				E('th', { 'class': 'th' }, _('MAC address')),
-@@ -120,7 +123,7 @@ return baseclass.extend({
- 			])
- 		]);
+@@ -91,8 +101,13 @@ return baseclass.extend({
+ 		this.isMACStatic = Object.create(null);
+ 		this.isDUIDStatic = Object.create(null);
+ 		this.isDUIDIAIDStatic = Object.create(null);
++		this.staticDUIDMAC = Object.create(null);
++		this.staticDUIDIAIDMAC = Object.create(null);
  
--		cbi_update_table(table, leases.map(L.bind(function(lease) {
-+		cbi_update_table(table, leases.map(L.bind(function(lease, index) {
- 			let exp;
- 			let vendor;
+ 		for (const host of uci.sections('dhcp', 'host')) {
++			// Only map a DUID to a MAC when the static lease names exactly one device
++			const staticMACs = [ ...new Set(L.toArray(host.mac).map(deviceAliases.normalizeMac).filter(m => m)) ];
++			const staticMAC = staticMACs.length == 1 ? staticMACs[0] : null;
  
-@@ -139,11 +142,12 @@ return baseclass.extend({
+ 			for (const mac of L.toArray(host.mac).map(m => m.toLowerCase()))
+ 				this.isMACStatic[mac] = true;
+@@ -100,10 +115,16 @@ return baseclass.extend({
+ 			for (const duid_iaid of L.toArray(host.duid).map(m => m.toLowerCase())) {
+ 				const parts = duid_iaid.split('%').length;
+ 
+-				if (parts == 1)
++				if (parts == 1) {
+ 					this.isDUIDStatic[duid_iaid] = true;
+-				else if (parts == 2)
++					if (staticMAC)
++						this.staticDUIDMAC[duid_iaid] ??= staticMAC;
++				}
++				else if (parts == 2) {
+ 					this.isDUIDIAIDStatic[duid_iaid] = true;
++					if (staticMAC)
++						this.staticDUIDIAIDMAC[duid_iaid] ??= staticMAC;
++				}
+ 			}
+ 		};
+ 
+@@ -139,11 +160,11 @@ return baseclass.extend({
  			else if (lease.hostname)
  				host = lease.hostname;
  
@@ -153,36 +183,48 @@ index 99856f2..172f33d 100644
  				vendor = macaddr[lease.macaddr.toLowerCase()]?.vendor ?? null;
  
  			const columns = [
-+				String(index + 1),
 -				'%h'.format(host || '-'),
 +				deviceAliases.renderHostnameCell(lease, host || '-', !isReadonlyView),
  				lease.ipaddr,
  				'%h'.format(vendor ? lease.macaddr + ` (${vendor})` : lease.macaddr),
  				lease.duid || '-',
-@@ -169,6 +173,7 @@ return baseclass.extend({
- 		const table6 = E('table', { 'id': 'status_leases6', 'class': 'table leases6' }, [
- 			E('tr', { 'class': 'tr table-titles' }, [
- 				L.hasSystemFeature('odhcpd', 'dhcpv6') ? E('th', { 'class': 'th' }, _('Interface')) : E([]),
-+				E('th', { 'class': 'th' }),
- 				E('th', { 'class': 'th' }, _('Hostname')),
- 				E('th', { 'class': 'th' }, _('IPv6 addresses')),
- 				E('th', { 'class': 'th' }, _('DUID')),
-@@ -178,7 +183,7 @@ return baseclass.extend({
- 			])
- 		]);
+@@ -188,18 +209,23 @@ return baseclass.extend({
+ 			else
+ 				exp = '%t'.format(lease.expires);
  
--		cbi_update_table(table6, leases6.map(L.bind(function(lease) {
-+		cbi_update_table(table6, leases6.map(L.bind(function(lease, index) {
- 			let exp;
+-			const hint = lease.macaddr ? machints.filter(function(h) { return h[0] == lease.macaddr })[0] : null;
++			const duid = lease.duid?.toLowerCase();
++			const iaid = lease.iaid?.toLowerCase();
++
++			// Resolve the MAC from the lease or DUID first, then static leases
++			let mac = deviceAliases.normalizeMac(lease.macaddr) ?? duidToMAC(duid);
++			if (!mac && duid && iaid)
++				mac = this.staticDUIDIAIDMAC[`${duid}%${iaid}`];
++			if (!mac && duid)
++				mac = this.staticDUIDMAC[duid];
++
++			const hint = mac ? machints.filter(function(h) { return deviceAliases.normalizeMac(h[0]) == mac })[0] : null;
+ 			let host = null;
  
- 			if (lease.expires === false)
-@@ -211,7 +216,8 @@ return baseclass.extend({
+-			if (hint && lease.hostname && lease.hostname != hint[1] && lease.ip6addr != hint[1])
++			if (hint && lease.hostname && lease.hostname != hint[1])
+ 				host = '%s (%s)'.format(lease.hostname, hint[1]);
+ 			else if (lease.hostname)
+ 				host = lease.hostname;
+-			else if (hint)
+-				host = hint[1];
+-
+-			const duid = lease.duid?.toLowerCase();
+-			const iaid = lease.iaid?.toLowerCase();
+ 
+ 			// Note: "disabled: false" doesn't work
+ 			let disabled = null;
+@@ -211,7 +237,7 @@ return baseclass.extend({
  				disabled = true;
  
  			const columns = [
 -				'%h'.format(host || '-'),
-+				String(index + 1),
-+				deviceAliases.renderHostnameCell(lease, host || '-', false),
++				deviceAliases.renderHostnameCell(Object.assign({}, lease, { macaddr: mac }), host || '-', false),
  				lease.ip6addrs ? lease.ip6addrs.join('<br />') : lease.ip6addr,
  				duid || '-',
  				iaid || '-',
@@ -209,10 +251,10 @@ index 956799e..1fa4ebd 100644
  
 diff --git a/modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.css b/modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.css
 new file mode 100644
-index 0000000..b2ace52
+index 0000000..ca8eb63
 --- /dev/null
 +++ b/modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.css
-@@ -0,0 +1,134 @@
+@@ -0,0 +1,135 @@
 +.device-alias-hostname {
 +	display: inline-flex;
 +	align-items: center;
@@ -262,6 +304,7 @@ index 0000000..b2ace52
 +	width: calc(100% - 32px);
 +	max-width: 480px;
 +	min-width: 0;
++	max-height: calc(100vh - 32px);
 +	max-height: calc(100dvh - 32px);
 +	overflow-y: auto;
 +}
