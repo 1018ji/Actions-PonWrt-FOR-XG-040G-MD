@@ -127,7 +127,24 @@ index 99856f2..e067859 100644
  		]);
  	},
  
-@@ -139,11 +141,11 @@ return baseclass.extend({
+@@ -110,6 +112,7 @@ return baseclass.extend({
+ 		const table = E('table', { 'id': 'status_leases', 'class': 'table leases' }, [
+ 			E('tr', { 'class': 'tr table-titles' }, [
+ 				L.hasSystemFeature('odhcpd', 'dhcpv4') ? E('th', { 'class': 'th' }, _('Interface')) : E([]),
++				E('th', { 'class': 'th' }),
+ 				E('th', { 'class': 'th' }, _('Hostname')),
+ 				E('th', { 'class': 'th' }, _('IPv4 address')),
+ 				E('th', { 'class': 'th' }, _('MAC address')),
+@@ -120,7 +123,7 @@ return baseclass.extend({
+ 			])
+ 		]);
+ 
+-		cbi_update_table(table, leases.map(L.bind(function(lease) {
++		cbi_update_table(table, leases.map(L.bind(function(lease, index) {
+ 			let exp;
+ 			let vendor;
+ 
+@@ -139,11 +142,12 @@ return baseclass.extend({
  			else if (lease.hostname)
  				host = lease.hostname;
  
@@ -136,6 +153,7 @@ index 99856f2..e067859 100644
  				vendor = macaddr[lease.macaddr.toLowerCase()]?.vendor ?? null;
  
  			const columns = [
++				String(index + 1),
 -				'%h'.format(host || '-'),
 +				deviceAliases.renderHostnameCell(lease, host || '-', !isReadonlyView),
  				lease.ipaddr,
