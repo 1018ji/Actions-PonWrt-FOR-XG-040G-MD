@@ -80,12 +80,12 @@ index 5a2bce2..828ad31 100644
 +msgstr "不支持当前自定义主机名配置，请更新 LuCI 或检查配置。"
 +
 +#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
-+msgid "Use only Chinese characters, English letters, digits, - and _, up to 32 characters. Leave empty to restore the original hostname."
-+msgstr "仅支持汉字、英文字母、数字、- 和 _，最多 32 个字符；留空将恢复原主机名。"
++msgid "Use only Chinese characters, English letters, digits, spaces, - and _, up to 32 characters. Leave empty to restore the original hostname."
++msgstr "仅支持汉字、英文字母、数字、空格、- 和 _，最多 32 个字符；留空将恢复原主机名。"
 +
 +#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
-+msgid "Use only Chinese characters, English letters, digits, - and _."
-+msgstr "仅允许汉字、英文字母、数字、- 和 _。"
++msgid "Use only Chinese characters, English letters, digits, spaces, - and _."
++msgstr "仅允许汉字、英文字母、数字、空格、- 和 _。"
 +
 +#: modules/luci-mod-status/htdocs/luci-static/resources/tools/device-aliases.js
 +msgid "You do not have permission to edit hostnames."
@@ -356,8 +356,8 @@ index 0000000..b0472da
 +		throw new Error(_('The hostname must not contain control characters.'));
 +
 +	const name = value.replace(/^ +| +$/g, '');
-+	if (!/^[\p{Script=Han}A-Za-z0-9_-]*$/u.test(name))
-+		throw new Error(_('Use only Chinese characters, English letters, digits, - and _.'));
++	if (!/^[\p{Script=Han}A-Za-z0-9 _-]*$/u.test(name))
++		throw new Error(_('Use only Chinese characters, English letters, digits, spaces, - and _.'));
 +	if (Array.from(name).length > 32 || new TextEncoder().encode(name).length > 128)
 +		throw new Error(_('The hostname must not exceed 32 characters.'));
 +
@@ -625,7 +625,7 @@ index 0000000..b0472da
 +	const content = E('div', { 'class': 'device-alias-fields' }, [
 +		row(_('IPv4 address'), lease.ipaddr), row(_('MAC address'), mac.toUpperCase()),
 +		E('label', { 'for': 'device-alias-name' }, [ _('Hostname') ]), input,
-+		E('p', { 'class': 'device-alias-help' }, [ _('Use only Chinese characters, English letters, digits, - and _, up to 32 characters. Leave empty to restore the original hostname.') ]),
++		E('p', { 'class': 'device-alias-help' }, [ _('Use only Chinese characters, English letters, digits, spaces, - and _, up to 32 characters. Leave empty to restore the original hostname.') ]),
 +		error, E('div', { 'class': 'button-row' }, [ cancel, ' ', save ])
 +	]);
 +	ui.showModal(_('Edit hostname'), [ content ], 'device-alias-modal');
